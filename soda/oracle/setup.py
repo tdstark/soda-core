@@ -10,11 +10,9 @@ if sys.version_info < (3, 7):
 
 package_name = "soda-core-oracle"
 package_version = "3.0.10"
-# TODO Add proper description
 description = "Soda Core Oracle Package"
 
 requires = [f"soda-core=={package_version}", "oracledb"]
-# TODO Fix the params
 setup(
     name=package_name,
     version=package_version,

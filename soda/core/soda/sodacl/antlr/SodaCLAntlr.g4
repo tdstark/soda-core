@@ -40,13 +40,16 @@ change_over_time
 
 change_over_time_config
  : change_aggregation S LAST S integer
- | 'same day last week'
- | 'same day last month'
+ | same_day_last_week
  ;
 
 change_aggregation
  : (AVG|MIN|MAX)
  ;
+
+same_day_last_week
+: 'same day last week'
+;
 
 percent
  : 'percent' S

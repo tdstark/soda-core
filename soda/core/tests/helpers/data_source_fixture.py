@@ -198,7 +198,7 @@ class DataSourceFixture:
                 return ",".join(self.data_source.literal(value) for value in row)
 
             rows_sql = ",\n".join([f"  ({sql_test_table_row(row)})" for row in test_table.values])
-            return f"INSERT INTO {qualified_table_name} VALUES \n" f"{rows_sql};"
+            return f"INSERT INTO {qualified_table_name} VALUES \n" f"{rows_sql}"
 
     def create_test_scan(self) -> TestScan:
         return TestScan(data_source=self.data_source)

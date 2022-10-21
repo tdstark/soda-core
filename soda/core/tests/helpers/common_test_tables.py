@@ -11,7 +11,7 @@ customers_test_table = TestTable(
     create_view=os.getenv("TEST_WITH_VIEWS", False),
     columns=[
         ("id", DataType.TEXT),
-        ("size", DataType.DECIMAL),
+        ("product_size", DataType.DECIMAL),
         ("sizeTxt", DataType.TEXT),
         ("distance", DataType.INTEGER),
         ("pct", DataType.TEXT),
@@ -19,11 +19,12 @@ customers_test_table = TestTable(
         ("country", DataType.TEXT),
         ("zip", DataType.TEXT),
         ("email", DataType.TEXT),
-        ("date", DataType.DATE),
+        ("date_updated", DataType.DATE),
         ("ts", DataType.TIMESTAMP),
         ("ts_with_tz", DataType.TIMESTAMP_TZ),
     ],
-    # fmt: off
+    #fmt: off
+
     values=[
         # TODO evolve this to a simple table data structure that can handle most of the basic test cases
         # I think the basic row count should be 10 or 20 so that It is predictable when reading this data
@@ -46,7 +47,7 @@ customers_dist_check_test_table = TestTable(
     create_view=os.getenv("TEST_WITH_VIEWS", False),
     columns=[
         ("id", DataType.TEXT),
-        ("size", DataType.DECIMAL),
+        ("cust_dist_size", DataType.DECIMAL),
     ],
     # fmt: off
     values=[
@@ -120,7 +121,7 @@ customers_profiling = TestTable(
     create_view=os.getenv("TEST_WITH_VIEWS", False),
     columns=[
         ("id", DataType.TEXT),
-        ("size", DataType.DECIMAL),
+        ("product_size", DataType.DECIMAL),
         ("sizeTxt", DataType.TEXT),
         ("distance", DataType.INTEGER),
         ("pct", DataType.TEXT),
@@ -128,7 +129,7 @@ customers_profiling = TestTable(
         ("country", DataType.TEXT),
         ("zip", DataType.TEXT),
         ("email", DataType.TEXT),
-        ("date", DataType.DATE),
+        ("date_updated", DataType.DATE),
         ("ts", DataType.TIMESTAMP),
         ("ts_with_tz", DataType.TIMESTAMP_TZ),
     ],

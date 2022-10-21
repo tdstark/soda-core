@@ -1,5 +1,5 @@
 from soda.execution.metric.derived_metric import (
-    derive_duplicate_percentage,
+    #derive_duplicate_percentage,
     derive_invalid_percentage,
     derive_missing_percentage,
 )

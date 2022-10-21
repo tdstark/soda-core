@@ -17,7 +17,7 @@ def test_checks_parsing():
         - row_count between .0005 and 10.45
         - row_count between (0 and 10.
         - row_count between (0 and 10.0)
-        - invalid_count(size) >= .5
+        - invalid_count(product_size) >= .5
         - change avg last 7 for missing(size) between -100 and +1)
       checks for "Quoted table name with weird $%()[]\\" chars":
         - row_count between 100 and 500

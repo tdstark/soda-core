@@ -60,7 +60,7 @@ def test_failed_rows_data_source_query_with_limit(data_source_fixture: DataSourc
                 fail query: |
                   SELECT *
                   FROM {qualified_table_name}
-                  WHERE size > 0
+                  WHERE product_size > 0
         """
     )
     scan.execute()
@@ -86,7 +86,7 @@ def test_failed_rows_data_source_query(data_source_fixture: DataSourceFixture):
                 fail query: |
                   SELECT *
                   FROM {qualified_table_name}
-                  WHERE size < 0
+                  WHERE product_size < 0
         """
     )
     scan.execute()
@@ -110,7 +110,7 @@ def test_failed_rows_table_query(data_source_fixture: DataSourceFixture):
                 fail query: |
                   SELECT *
                   FROM {qualified_table_name}
-                  WHERE size < 0
+                  WHERE product_size < 0
         """
     )
     scan.execute()

@@ -1,9 +1,10 @@
 import logging
 import os
-from soda_lineage.client import OpenLineageClient
+from openlineage.client import OpenLineageClient
 from soda.common.config_helper import ConfigHelper
 
 logger = logging.getLogger(__name__)
+
 class SodaLineage:
     """Main entry point for OpenLineage tracing."""
     __instance = None

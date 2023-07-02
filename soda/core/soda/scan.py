@@ -27,11 +27,13 @@ from soda.sodacl.check_cfg import CheckCfg
 from soda.sodacl.location import Location
 from soda.sodacl.sodacl_cfg import SodaCLCfg
 from soda.telemetry.soda_telemetry import SodaTelemetry
+from soda.lineage.soda_lineage import SodaLineage
 
 logger = logging.getLogger(__name__)
 verbose = False
 
 soda_telemetry = SodaTelemetry.get_instance()
+soda_lineage = SodaLineage.get_instance()
 
 
 class Scan:
@@ -636,6 +638,7 @@ class Scan:
             }
         )
 
+        self.emit_openlineage_event()
         return exit_value
 
     def run_data_source_scan(self):
@@ -935,3 +938,60 @@ class Scan:
 
     def has_soda_cloud_connection(self):
         return self._configuration.soda_cloud is not None
+
+    def disable_openlineage(self):
+        # TODO this won't function like Telemetry yet. We need to turn openlineage into a decorator/wrapper.
+        self._configuration.openlineage = None
+
+    def emit_openlineage_event(self):
+        import uuid
+        from openlineage.client.facet import ColumnLineageDatasetFacet, DocumentationJobFacet, SqlJobFacet, DataQualityAssertionsDatasetFacet, Assertion
+        from openlineage.client.run import InputDataset, Dataset, Job, Run, RunState
+        from openlineage.client.run import RunEvent
+
+        test_val = 0
+        # for query in self._queries:
+        # print("********************")
+        # print(
+        #     [metric.data_source_scan.get_queries() for metric in self._metrics]
+        # )
+        # print("********************")
+
+        input_datasets = list()
+        for check in self._checks:
+            check = check.get_dict()
+            dataset_facets = {"assertions": DataQualityAssertionsDatasetFacet(
+                assertions=[
+                    Assertion(assertion=check["name"],
+                              success=True if check["outcome"] == "pass" else False,
+                              column=check["column"])
+                ]
+            )}
+            input_dataset = InputDataset(
+                namespace=self._data_source_name,
+                name=check["table"],
+                inputFacets=dataset_facets,
+            )
+            input_datasets.append(input_dataset)
+
+        consolidated_queries = "".join([f"--{query.query_name}\n" + query.sql + ";\n" for query in self._queries])
+        job_facets = {"sql": SqlJobFacet(query=consolidated_queries),
+                      "documentation": DocumentationJobFacet(description="SODA Table Validations"),}
+        soda_job = Job(self._data_source_name, self._scan_definition_name, facets=job_facets)
+
+        run_events = list()
+        run_object = Run(runId=str(uuid.uuid4()))
+        for state in (RunState.START, RunState.COMPLETE):
+            run_event = RunEvent(
+                eventType=state,
+                eventTime=self._scan_start_timestamp.isoformat(),
+                run=run_object,
+                job=soda_job,
+                inputs=input_datasets,
+                outputs=[],
+                producer=f"https://github.com/sodadata/soda-core/releases/tag/{SODA_CORE_VERSION}",
+            )
+            run_events.append(run_event)
+
+        for event in run_events:
+            soda_lineage.client.emit(event)

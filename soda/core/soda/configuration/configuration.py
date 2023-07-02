@@ -4,6 +4,7 @@ from soda.cloud.dbt_config import DbtCloudConfig
 from soda.cloud.soda_cloud import SodaCloud
 from soda.common.file_system import file_system
 from soda.execution.telemetry import Telemetry
+from soda.execution.soda_lineage import SodaLineage
 from soda.sampler.sampler import Sampler
 from soda.sampler.soda_cloud_sampler import SodaCloudSampler
 from soda.scan import Scan
@@ -20,6 +21,7 @@ class Configuration:
         self.dbt_cloud: DbtCloudConfig | None = None
         self.exclude_columns: dict[str, list] = {}
         self.samples_limit: int | None = None
+        self.openlineage: SodaLineage | None = SodaLineage()
 
     def add_spark_session(self, data_source_name: str, spark_session):
         self.data_source_properties_by_name[data_source_name] = {

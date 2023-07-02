@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys
 import textwrap
 from datetime import datetime, timezone
 
@@ -945,46 +946,75 @@ class Scan:
 
     def emit_openlineage_event(self):
         import uuid
-        from openlineage.client.facet import ColumnLineageDatasetFacet, DocumentationJobFacet, SqlJobFacet, DataQualityAssertionsDatasetFacet, Assertion
+        from collections import defaultdict
+        from openlineage.client.facet import ColumnLineageDatasetFacet, DocumentationJobFacet, SqlJobFacet, DataQualityAssertionsDatasetFacet, Assertion, ParentRunFacet, ErrorMessageRunFacet
         from openlineage.client.run import InputDataset, Dataset, Job, Run, RunState
         from openlineage.client.run import RunEvent
 
-        test_val = 0
-        # for query in self._queries:
-        # print("********************")
-        # print(
-        #     [metric.data_source_scan.get_queries() for metric in self._metrics]
-        # )
-        # print("********************")
-
+        # Dataset Objects/Facets
         input_datasets = list()
+        dataset_facets = dict()
+
         for check in self._checks:
             check = check.get_dict()
-            dataset_facets = {"assertions": DataQualityAssertionsDatasetFacet(
-                assertions=[
+
+            if check["table"] not in dataset_facets:
+                dataset_facets[check["table"]] = {}
+
+            if "assertions" not in dataset_facets[check["table"]]:
+                dataset_facets[check["table"]]["assertions"] = []
+
+            dataset_facets[check["table"]]["assertions"].append(
                     Assertion(assertion=check["name"],
-                              success=True if check["outcome"] == "pass" else False,
-                              column=check["column"])
-                ]
-            )}
+                              success=True if check["outcome"] and check["outcome"] == "pass" else False,
+                              column=check["column"] if check["column"] else None)
+                )
+
+        # Reformat the facets for the final InputDataset
+        for table_name, facets in dataset_facets.items():
+            dataset_facets[table_name]["assertions"] = DataQualityAssertionsDatasetFacet(
+                assertions=dataset_facets[table_name]["assertions"]
+            )
+
             input_dataset = InputDataset(
                 namespace=self._data_source_name,
-                name=check["table"],
-                inputFacets=dataset_facets,
+                name=table_name,
+                inputFacets=facets,
             )
             input_datasets.append(input_dataset)
 
-        consolidated_queries = "".join([f"--{query.query_name}\n" + query.sql + ";\n" for query in self._queries])
+        # Job Objects/Facets
+        consolidated_queries = "\n".join([f"--{query.query_name}\n" + query.sql + ";" for query in self._queries])
         job_facets = {"sql": SqlJobFacet(query=consolidated_queries),
-                      "documentation": DocumentationJobFacet(description="SODA Table Validations"),}
+                      "documentation": DocumentationJobFacet(description="SODA Table Validations"),
+                      #"parent": ParentRunFacet(run=None, job=None)
+                      }
         soda_job = Job(self._data_source_name, self._scan_definition_name, facets=job_facets)
 
+        # Run Objects/Events
         run_events = list()
         run_object = Run(runId=str(uuid.uuid4()))
-        for state in (RunState.START, RunState.COMPLETE):
+
+        # TODO: Refactor this to be more coherent
+        for state in (RunState.START, RunState.FAIL, RunState.COMPLETE):
+            if state == RunState.START:
+                event_time = self._scan_start_timestamp.isoformat()
+            else:
+                event_time = self._scan_end_timestamp.isoformat()
+
+            if state == RunState.FAIL and self.has_error_logs():
+                run_object.facets = {"errorMessage": ErrorMessageRunFacet(
+                    message=self.get_error_logs_text(),
+                    programmingLanguage=f"Python {sys.version}",
+                    )}
+            elif state == RunState.FAIL and not self.has_error_logs():
+                continue
+            elif state == RunState.COMPLETE and self.has_error_logs():
+                continue
+
             run_event = RunEvent(
                 eventType=state,
-                eventTime=self._scan_start_timestamp.isoformat(),
+                eventTime=event_time,
                 run=run_object,
                 job=soda_job,
                 inputs=input_datasets,
